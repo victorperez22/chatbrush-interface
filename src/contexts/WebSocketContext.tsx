@@ -30,17 +30,22 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [messages, setMessages] = useState<WebSocketMessage[]>([]);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const maxReconnectAttempts = 5;
 
-  useEffect(() => {
-    // Replace with your actual WebSocket server URL
-    const webSocketUrl = 'ws://localhost:8000/ws';
-    
+  const connectWebSocket = () => {
     try {
+      // Replace with your actual WebSocket server URL 
+      // For production, you might want to use environment variables
+      const webSocketUrl = 'ws://localhost:8000/ws';
+      
+      console.log('Attempting WebSocket connection to:', webSocketUrl);
       const ws = new WebSocket(webSocketUrl);
 
       ws.onopen = () => {
         console.log('WebSocket connection established');
         setIsConnected(true);
+        setReconnectAttempts(0);
         toast.success('Conexión establecida con el servidor');
       };
 
@@ -56,10 +61,25 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         }
       };
 
-      ws.onclose = () => {
-        console.log('WebSocket connection closed');
+      ws.onclose = (event) => {
+        console.log('WebSocket connection closed', event.code, event.reason);
         setIsConnected(false);
-        toast.error('La conexión con el servidor se ha cerrado');
+        
+        // Only show toast for unexpected closures
+        if (event.code !== 1000) {
+          toast.error('La conexión con el servidor se ha cerrado');
+        }
+        
+        // Attempt to reconnect if not at max attempts
+        if (reconnectAttempts < maxReconnectAttempts) {
+          const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+          console.log(`Attempting reconnect in ${timeout}ms (attempt ${reconnectAttempts + 1})`);
+          
+          setTimeout(() => {
+            setReconnectAttempts(prev => prev + 1);
+            connectWebSocket();
+          }, timeout);
+        }
       };
 
       ws.onerror = (error) => {
@@ -70,15 +90,22 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       setSocket(ws);
 
-      return () => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.close();
-        }
-      };
+      return ws;
     } catch (error) {
       console.error('Error creating WebSocket connection:', error);
       toast.error('No se pudo establecer la conexión WebSocket');
+      return null;
     }
+  };
+
+  useEffect(() => {
+    const ws = connectWebSocket();
+    
+    return () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close(1000, 'Component unmounted');
+      }
+    };
   }, []);
 
   return (

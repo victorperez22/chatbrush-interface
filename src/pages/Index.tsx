@@ -16,10 +16,10 @@ const Index = () => {
 
   return (
     <WebSocketProvider>
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="min-h-screen bg-slate-50 p-4 md:p-6">
         <header className="mb-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center">
               AI Tutor Interface
               <ConnectionStatus />
             </h1>

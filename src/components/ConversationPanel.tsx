@@ -21,21 +21,21 @@ const ConversationPanel = () => {
   }, [transcriptMessages]);
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-lg border border-gray-200">
-      <div className="p-4 border-b border-gray-200 bg-primary/5">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-primary" />
+    <div className="flex flex-col h-full bg-white rounded-lg shadow-md border border-slate-200">
+      <div className="p-4 border-b border-slate-200 bg-white">
+        <h2 className="text-lg font-semibold flex items-center gap-2 text-blue-700">
+          <MessageSquare className="h-5 w-5" />
           Conversación
         </h2>
       </div>
       
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
+        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
         id="conversation-log"
       >
         {transcriptMessages.length === 0 ? (
-          <div className="text-center text-gray-400 mt-10">
+          <div className="text-center text-slate-400 mt-10">
             <p>La conversación aparecerá aquí...</p>
           </div>
         ) : (
@@ -55,13 +55,16 @@ const MessageBubble = ({ message }: { message: WebSocketMessage }) => {
     <div className={cn(
       "max-w-[80%] p-3 rounded-lg",
       isUser 
-        ? "bg-secondary self-end ml-auto rounded-br-none" 
-        : "bg-primary text-white self-start rounded-bl-none"
+        ? "bg-blue-50 text-slate-700 self-end ml-auto rounded-br-none border border-blue-100" 
+        : "bg-indigo-600 text-white self-start rounded-bl-none shadow-sm"
     )}>
-      <div className="font-medium mb-1">
+      <div className={cn(
+        "font-medium mb-1",
+        isUser ? "text-blue-700" : "text-white/90"
+      )}>
         {isUser ? 'Usuario' : 'IA'}:
       </div>
-      <div>{message.payload.content}</div>
+      <div className="text-sm">{message.payload.content}</div>
     </div>
   );
 };

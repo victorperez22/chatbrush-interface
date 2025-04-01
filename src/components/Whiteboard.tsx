@@ -15,7 +15,7 @@ const Whiteboard = () => {
     
     if (relevantMessages.length === 0) {
       return (
-        <div className="text-center text-gray-400 mt-10">
+        <div className="text-center text-slate-400 mt-10">
           <p>El contenido de apoyo aparecerá aquí...</p>
         </div>
       );
@@ -49,7 +49,7 @@ const Whiteboard = () => {
       <div className="whiteboard-content space-y-4">
         {currentContent && (
           <div 
-            className="prose max-w-none"
+            className="prose max-w-none dark:prose-invert"
             dangerouslySetInnerHTML={{ __html: currentContent }}
           />
         )}
@@ -58,7 +58,7 @@ const Whiteboard = () => {
             <img 
               src={imageUrl} 
               alt="Whiteboard content" 
-              className="max-w-full rounded-lg"
+              className="max-w-full rounded-lg border border-slate-200"
             />
           </div>
         )}
@@ -67,16 +67,16 @@ const Whiteboard = () => {
   };
 
   return (
-    <div className="h-full bg-white rounded-lg shadow-lg border border-gray-200">
-      <div className="p-4 border-b border-gray-200 bg-primary/5">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Pencil className="h-5 w-5 text-primary" />
+    <div className="h-full bg-white rounded-lg shadow-md border border-slate-200">
+      <div className="p-4 border-b border-slate-200 bg-white">
+        <h2 className="text-lg font-semibold flex items-center gap-2 text-purple-700">
+          <Pencil className="h-5 w-5" />
           Pizarra Interactiva
         </h2>
       </div>
       
       <div 
-        className="p-6 overflow-y-auto h-[calc(100%-4rem)]"
+        className="p-6 overflow-y-auto h-[calc(100%-4rem)] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
         id="interactive-pizarra"
       >
         {renderWhiteboardContent()}

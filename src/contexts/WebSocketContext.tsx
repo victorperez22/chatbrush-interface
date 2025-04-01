@@ -5,6 +5,10 @@ import { toast } from "sonner";
 interface WebSocketContextType {
   isConnected: boolean;
   messages: WebSocketMessage[];
+  reconnectAttempts: number;
+  setWebSocketUrl: (url: string) => void;
+  connect: () => void;
+  disconnect: () => void;
 }
 
 export interface WebSocketMessage {
@@ -17,6 +21,9 @@ export interface WebSocketMessage {
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
+
+// Default to a placeholder URL that will be replaced
+const DEFAULT_WS_URL = 'ws://localhost:8000/ws';
 
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
@@ -31,13 +38,31 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [messages, setMessages] = useState<WebSocketMessage[]>([]);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [webSocketUrl, setWebSocketUrl] = useState<string>(
+    localStorage.getItem('websocketUrl') || DEFAULT_WS_URL
+  );
+  const [isFirstConnection, setIsFirstConnection] = useState(true);
   const maxReconnectAttempts = 5;
+
+  const disconnect = () => {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.close(1000, 'User initiated disconnect');
+      setIsConnected(false);
+    }
+  };
+
+  const connect = () => {
+    // Reset connection attempts on manual connect
+    setReconnectAttempts(0);
+    connectWebSocket();
+  };
 
   const connectWebSocket = () => {
     try {
-      // Replace with your actual WebSocket server URL 
-      // For production, you might want to use environment variables
-      const webSocketUrl = 'ws://localhost:8000/ws';
+      // Disconnect any existing connection first
+      if (socket) {
+        socket.close();
+      }
       
       console.log('Attempting WebSocket connection to:', webSocketUrl);
       const ws = new WebSocket(webSocketUrl);
@@ -46,7 +71,12 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         console.log('WebSocket connection established');
         setIsConnected(true);
         setReconnectAttempts(0);
-        toast.success('Conexión establecida con el servidor');
+        
+        // Only show toast for non-first connections to avoid spam
+        if (!isFirstConnection) {
+          toast.success('Conexión establecida con el servidor');
+        }
+        setIsFirstConnection(false);
       };
 
       ws.onmessage = (event) => {
@@ -65,13 +95,13 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         console.log('WebSocket connection closed', event.code, event.reason);
         setIsConnected(false);
         
-        // Only show toast for unexpected closures
-        if (event.code !== 1000) {
+        // Only show toast for unexpected closures and not on first attempt
+        if (event.code !== 1000 && !isFirstConnection) {
           toast.error('La conexión con el servidor se ha cerrado');
         }
         
-        // Attempt to reconnect if not at max attempts
-        if (reconnectAttempts < maxReconnectAttempts) {
+        // Attempt to reconnect if not at max attempts and not a normal closure
+        if (reconnectAttempts < maxReconnectAttempts && event.code !== 1000) {
           const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
           console.log(`Attempting reconnect in ${timeout}ms (attempt ${reconnectAttempts + 1})`);
           
@@ -84,8 +114,11 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
-        setIsConnected(false);
-        toast.error('Error en la conexión WebSocket');
+        
+        // Only show toast for errors not on first attempt
+        if (!isFirstConnection) {
+          toast.error('Error en la conexión WebSocket');
+        }
       };
 
       setSocket(ws);
@@ -93,10 +126,18 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       return ws;
     } catch (error) {
       console.error('Error creating WebSocket connection:', error);
-      toast.error('No se pudo establecer la conexión WebSocket');
+      
+      if (!isFirstConnection) {
+        toast.error('No se pudo establecer la conexión WebSocket');
+      }
       return null;
     }
   };
+
+  // Save WebSocket URL to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('websocketUrl', webSocketUrl);
+  }, [webSocketUrl]);
 
   useEffect(() => {
     const ws = connectWebSocket();
@@ -106,10 +147,17 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         ws.close(1000, 'Component unmounted');
       }
     };
-  }, []);
+  }, [webSocketUrl]); // Only reconnect when URL changes
 
   return (
-    <WebSocketContext.Provider value={{ isConnected, messages }}>
+    <WebSocketContext.Provider value={{ 
+      isConnected, 
+      messages, 
+      reconnectAttempts,
+      setWebSocketUrl,
+      connect,
+      disconnect
+    }}>
       {children}
     </WebSocketContext.Provider>
   );

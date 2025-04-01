@@ -4,6 +4,7 @@ import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import ConversationPanel from '@/components/ConversationPanel';
 import Whiteboard from '@/components/Whiteboard';
 import ConnectionStatus from '@/components/ConnectionStatus';
+import WebSocketConfig from '@/components/WebSocketConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
@@ -24,9 +25,11 @@ const Index = () => {
               <ConnectionStatus />
             </h1>
           </div>
+          
+          <WebSocketConfig />
         </header>
 
-        <div className={`grid ${isMobile ? 'grid-rows-2 gap-6' : 'grid-cols-2 gap-8'} h-[calc(100vh-8rem)]`}>
+        <div className={`grid ${isMobile ? 'grid-rows-2 gap-6' : 'grid-cols-2 gap-8'} h-[calc(100vh-12rem)]`}>
           <div className="h-full">
             <ConversationPanel />
           </div>

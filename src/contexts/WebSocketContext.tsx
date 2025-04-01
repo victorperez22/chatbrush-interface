@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 interface WebSocketContextType {
   isConnected: boolean;

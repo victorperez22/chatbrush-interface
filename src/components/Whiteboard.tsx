@@ -4,7 +4,7 @@ import { useWebSocket, WebSocketMessage } from '@/contexts/WebSocketContext';
 import { Pencil } from 'lucide-react';
 
 const Whiteboard = () => {
-  const { messages } = useWebSocket();
+  const { messages, isConnected } = useWebSocket();
 
   // Function to generate HTML content for the whiteboard based on messages
   const renderWhiteboardContent = () => {
@@ -16,7 +16,7 @@ const Whiteboard = () => {
     if (relevantMessages.length === 0) {
       return (
         <div className="text-center text-slate-400 mt-10">
-          <p>El contenido de apoyo aparecerá aquí...</p>
+          <p>{isConnected ? 'El contenido de apoyo aparecerá aquí...' : 'La pizarra se actualizará aquí...'}</p>
         </div>
       );
     }

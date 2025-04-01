@@ -10,6 +10,7 @@ const ConnectionStatus = () => {
 
   return (
     <Badge 
+      id="connection-status-badge"
       className={cn(
         "ml-3 px-2.5 py-0.5 text-xs font-medium flex items-center gap-1",
         isConnected 

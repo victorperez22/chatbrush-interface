@@ -8,7 +8,7 @@ import { ArrowRightCircle, RefreshCw } from 'lucide-react';
 
 const WebSocketConfig = () => {
   const { isConnected, setWebSocketUrl, connect, disconnect, reconnectAttempts } = useWebSocket();
-  const [url, setUrl] = useState(() => localStorage.getItem('websocketUrl') || 'ws://localhost:8000/ws');
+  const [url, setUrl] = useState(() => localStorage.getItem('websocketUrl') || 'ws://localhost:8080');
   
   const handleConnect = () => {
     if (url.trim()) {
@@ -33,7 +33,7 @@ const WebSocketConfig = () => {
         <Input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="ws://tuservidor.com/ws"
+          placeholder="ws://localhost:8080"
           className="text-sm"
         />
         {isConnected ? (

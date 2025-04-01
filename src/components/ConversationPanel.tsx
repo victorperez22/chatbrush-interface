@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { MessageSquare } from 'lucide-react';
 
 const ConversationPanel = () => {
-  const { messages } = useWebSocket();
+  const { messages, isConnected } = useWebSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Filter messages to only show transcript types
@@ -31,12 +31,12 @@ const ConversationPanel = () => {
       
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
         id="conversation-log"
+        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
       >
         {transcriptMessages.length === 0 ? (
           <div className="text-center text-slate-400 mt-10">
-            <p>La conversación aparecerá aquí...</p>
+            <p>{isConnected ? 'La conversación aparecerá aquí...' : 'Esperando conexión con el servidor...'}</p>
           </div>
         ) : (
           transcriptMessages.map((message, index) => (

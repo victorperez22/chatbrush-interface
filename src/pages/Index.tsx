@@ -9,6 +9,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const IndexContent = () => {
   const isMobile = useIsMobile();
   const { connect, isConnected } = useWebSocket();
+  // Define the ref at the top level of the component, not inside useEffect
+  const hasTriedConnecting = React.useRef(false);
 
   // Change the document title
   useEffect(() => {
@@ -18,9 +20,6 @@ const IndexContent = () => {
   // Connect to WebSocket automatically when the component mounts
   // The real connection happens in the WebSocketProvider and this is just a fallback
   useEffect(() => {
-    // We use a ref to track if we've already tried connecting from this component
-    const hasTriedConnecting = React.useRef(false);
-    
     if (!isConnected && !hasTriedConnecting.current) {
       console.log("IndexContent - Not connected, triggering manual connect");
       hasTriedConnecting.current = true;
@@ -28,7 +27,7 @@ const IndexContent = () => {
     }
     
     // No cleanup needed here
-  }, [isConnected]); // Include isConnected to retry if connection status changes
+  }, [isConnected, connect]); // Include isConnected to retry if connection status changes
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">

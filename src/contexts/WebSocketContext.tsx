@@ -48,18 +48,20 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const connect = () => {
+    console.log("Manual connection attempt triggered");
     // Reset connection attempts on manual connect
     setReconnectAttempts(0);
-    connectWebSocket();
+    setupWebSocketConnection();
   };
 
-  const connectWebSocket = () => {
+  const setupWebSocketConnection = () => {
+    // If there's an existing socket, close it properly first
+    if (socket) {
+      console.log("Closing existing socket before creating a new one");
+      socket.close();
+    }
+    
     try {
-      // Disconnect any existing connection first
-      if (socket) {
-        socket.close();
-      }
-      
       console.log('Attempting WebSocket connection to:', WEBSOCKET_URL);
       const ws = new WebSocket(WEBSOCKET_URL);
 
@@ -93,7 +95,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
           
           setTimeout(() => {
             setReconnectAttempts(prev => prev + 1);
-            connectWebSocket();
+            setupWebSocketConnection();
           }, timeout);
         }
       };
@@ -103,7 +105,6 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       };
 
       setSocket(ws);
-
       return ws;
     } catch (error) {
       console.error('Error creating WebSocket connection:', error);
@@ -111,15 +112,19 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  // Set up WebSocket connection once when component mounts
   useEffect(() => {
-    const ws = connectWebSocket();
+    console.log("WebSocketProvider mounted - setting up initial connection (ONCE ONLY)");
+    const ws = setupWebSocketConnection();
     
+    // Clean up function to close WebSocket when component unmounts
     return () => {
+      console.log("WebSocketProvider unmounting - closing connection");
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.close(1000, 'Component unmounted');
       }
     };
-  }, []); // Connect once when component mounts
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   return (
     <WebSocketContext.Provider value={{ 

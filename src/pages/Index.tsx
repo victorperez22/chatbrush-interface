@@ -16,11 +16,14 @@ const IndexContent = () => {
   }, []);
 
   // Connect to WebSocket automatically when the component mounts
+  // The real connection happens in the WebSocketProvider and this is just a fallback
   useEffect(() => {
+    console.log("IndexContent mounted - connection status:", isConnected);
     if (!isConnected) {
+      console.log("Not connected on initial mount, triggering manual connect");
       connect();
     }
-  }, [connect, isConnected]);
+  }, []); // Only run on mount, don't include isConnected here
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">

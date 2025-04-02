@@ -8,7 +8,7 @@ interface WebSocketContextType {
   reconnectAttempts: number;
   connect: () => void;
   disconnect: () => void;
-  sendMessage: (message: Record<string, any>) => boolean; // Changed from object to Record<string, any>
+  sendMessage: (message: Record<string, any>) => boolean;
 }
 
 export interface WebSocketMessage {
@@ -76,17 +76,8 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         globalWebSocket.send(messageString);
         console.log('Message sent:', messageString);
         
-        // If message is user_message type, add it to local messages
-        if ('type' in message && message.type === 'user_message' && 'payload' in message && typeof message.payload === 'object' && message.payload && 'content' in message.payload) {
-          const userMessage: WebSocketMessage = {
-            type: 'transcript_user',
-            payload: {
-              content: message.payload.content as string
-            }
-          };
-          setMessages((prevMessages) => [...prevMessages, userMessage]);
-        }
-        
+        // Remove the immediate user message display logic
+        // We'll wait for the server to send back the transcript_user_final message
         return true;
       } catch (error) {
         console.error('Error sending message:', error);
@@ -129,13 +120,23 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data) as WebSocketMessage;
+          // Parse message data safely with error handling
+          let data: WebSocketMessage;
+          try {
+            data = JSON.parse(event.data) as WebSocketMessage;
+          } catch (error) {
+            console.error("Error parsing WebSocket message:", error, "Original message:", event.data);
+            return;
+          }
+          
           console.log('WebSocket message received:', data);
           
-          // Add message to state
-          setMessages((prevMessages) => [...prevMessages, data]);
+          // Add all valid messages to the state
+          if (data && data.type && data.payload) {
+            setMessages((prevMessages) => [...prevMessages, data]);
+          }
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error('Error handling WebSocket message:', error);
         }
       };
 

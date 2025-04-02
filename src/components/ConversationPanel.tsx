@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useWebSocket, WebSocketMessage } from '@/contexts/WebSocketContext';
 import { cn } from '@/lib/utils';
@@ -10,9 +11,11 @@ const ConversationPanel = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [userInput, setUserInput] = useState('');
 
-  // Filter messages to only show transcript types
+  // Filter messages to only show transcript types (both AI and user messages)
   const transcriptMessages = messages.filter(
-    msg => msg.type === 'transcript_user' || msg.type === 'transcript_ai'
+    msg => msg.type === 'transcript_user' || 
+           msg.type === 'transcript_user_final' || 
+           msg.type === 'transcript_ai'
   );
 
   // Auto-scroll to bottom when new messages arrive
@@ -44,7 +47,7 @@ const ConversationPanel = () => {
 
     // Use our WebSocket context to send the message
     try {
-      // Use the sendMessage function from context instead of direct WebSocket access
+      // Use the sendMessage function from context
       const sent = sendMessage(messageToSend);
       
       if (sent) {
@@ -117,7 +120,8 @@ const ConversationPanel = () => {
 };
 
 const MessageBubble = ({ message }: { message: WebSocketMessage }) => {
-  const isUser = message.type === 'transcript_user';
+  // Consider both transcript_user and transcript_user_final as user messages
+  const isUser = message.type === 'transcript_user' || message.type === 'transcript_user_final';
   
   return (
     <div className={cn(

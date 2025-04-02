@@ -8,7 +8,7 @@ interface WebSocketContextType {
   reconnectAttempts: number;
   connect: () => void;
   disconnect: () => void;
-  sendMessage: (message: object) => boolean; // Nueva función para enviar mensajes
+  sendMessage: (message: Record<string, any>) => boolean; // Changed from object to Record<string, any>
 }
 
 export interface WebSocketMessage {
@@ -68,16 +68,16 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
     setupWebSocketConnection();
   };
 
-  // Nueva función para enviar mensajes a través del WebSocket
-  const sendMessage = (message: object): boolean => {
+  // Fixed function to send messages through WebSocket
+  const sendMessage = (message: Record<string, any>): boolean => {
     if (globalWebSocket && globalWebSocket.readyState === WebSocket.OPEN) {
       try {
         const messageString = JSON.stringify(message);
         globalWebSocket.send(messageString);
         console.log('Message sent:', messageString);
         
-        // Si el mensaje es de tipo user_message, agregarlo inmediatamente a los mensajes locales
-        if ('type' in message && message.type === 'user_message' && 'payload' in message && 'content' in message.payload) {
+        // If message is user_message type, add it to local messages
+        if ('type' in message && message.type === 'user_message' && 'payload' in message && typeof message.payload === 'object' && message.payload && 'content' in message.payload) {
           const userMessage: WebSocketMessage = {
             type: 'transcript_user',
             payload: {

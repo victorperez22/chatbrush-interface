@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useWebSocket, WebSocketMessage } from '@/contexts/WebSocketContext';
 import { cn } from '@/lib/utils';
@@ -7,7 +6,7 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 
 const ConversationPanel = () => {
-  const { messages, isConnected, connect } = useWebSocket();
+  const { messages, isConnected, connect, sendMessage } = useWebSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [userInput, setUserInput] = useState('');
 
@@ -45,28 +44,15 @@ const ConversationPanel = () => {
 
     // Use our WebSocket context to send the message
     try {
-      // Create local message representation for immediate feedback
-      const localMessage: WebSocketMessage = {
-        type: 'transcript_user',
-        payload: {
-          content: userInput.trim()
-        }
-      };
-
-      // This won't actually send through WebSocket directly, 
-      // but it adds the message to our local state for UI feedback
-      // The actual WebSocket.send() is handled in the WebSocketContext
+      // Use the sendMessage function from context instead of direct WebSocket access
+      const sent = sendMessage(messageToSend);
       
-      // Instead, we'd need to extend our WebSocketContext to handle sending messages
-      // For now, we'll use the WebSocket.send method directly from the global instance
-      if (window.globalWebSocket && window.globalWebSocket.readyState === WebSocket.OPEN) {
-        window.globalWebSocket.send(JSON.stringify(messageToSend));
+      if (sent) {
+        // Clear the input only if sending was successful
+        setUserInput('');
       } else {
-        console.error('No se puede acceder al WebSocket global');
+        console.error('No se pudo enviar el mensaje');
       }
-
-      // Clear the input
-      setUserInput('');
     } catch (error) {
       console.error('Error al enviar mensaje:', error);
     }

@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { WebSocketProvider, useWebSocket } from '@/contexts/WebSocketContext';
 import ConversationPanel from '@/components/ConversationPanel';
 import Whiteboard from '@/components/Whiteboard';
@@ -18,12 +18,17 @@ const IndexContent = () => {
   // Connect to WebSocket automatically when the component mounts
   // The real connection happens in the WebSocketProvider and this is just a fallback
   useEffect(() => {
-    console.log("IndexContent mounted - connection status:", isConnected);
-    if (!isConnected) {
-      console.log("Not connected on initial mount, triggering manual connect");
+    // We use a ref to track if we've already tried connecting from this component
+    const hasTriedConnecting = React.useRef(false);
+    
+    if (!isConnected && !hasTriedConnecting.current) {
+      console.log("IndexContent - Not connected, triggering manual connect");
+      hasTriedConnecting.current = true;
       connect();
     }
-  }, []); // Only run on mount, don't include isConnected here
+    
+    // No cleanup needed here
+  }, [isConnected]); // Include isConnected to retry if connection status changes
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">

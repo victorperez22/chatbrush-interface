@@ -24,6 +24,9 @@ const WebSocketContext = createContext<WebSocketContextType | null>(null);
 // Use the correct WebSocket URL
 const WEBSOCKET_URL = 'ws://localhost:8080';
 
+// Create a singleton WebSocket instance
+let globalWebSocket: WebSocket | null = null;
+
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
   if (!context) {
@@ -41,8 +44,10 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   const maxReconnectAttempts = 5;
 
   const disconnect = () => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.close(1000, 'User initiated disconnect');
+    if (globalWebSocket && globalWebSocket.readyState === WebSocket.OPEN) {
+      console.log("Manually disconnecting WebSocket");
+      globalWebSocket.close(1000, 'User initiated disconnect');
+      globalWebSocket = null;
       setIsConnected(false);
     }
   };
@@ -55,15 +60,24 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const setupWebSocketConnection = () => {
-    // If there's an existing socket, close it properly first
-    if (socket) {
-      console.log("Closing existing socket before creating a new one");
-      socket.close();
+    // If we already have a global socket, don't create a new one
+    if (globalWebSocket && (globalWebSocket.readyState === WebSocket.CONNECTING || globalWebSocket.readyState === WebSocket.OPEN)) {
+      console.log("Using existing global WebSocket connection");
+      setSocket(globalWebSocket);
+      return globalWebSocket;
     }
     
     try {
+      // Close any existing socket before creating a new one
+      if (globalWebSocket) {
+        console.log("Closing existing global socket before creating a new one");
+        globalWebSocket.close();
+        globalWebSocket = null;
+      }
+      
       console.log('Attempting WebSocket connection to:', WEBSOCKET_URL);
       const ws = new WebSocket(WEBSOCKET_URL);
+      globalWebSocket = ws;
 
       ws.onopen = () => {
         console.log('WebSocket connection established');
@@ -87,6 +101,11 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       ws.onclose = (event) => {
         console.log('WebSocket connection closed', event.code, event.reason);
         setIsConnected(false);
+        
+        // Clear the globalWebSocket reference
+        if (globalWebSocket === ws) {
+          globalWebSocket = null;
+        }
         
         // Attempt to reconnect if not at max attempts and not a normal closure
         if (reconnectAttempts < maxReconnectAttempts && event.code !== 1000) {
@@ -120,8 +139,10 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
     // Clean up function to close WebSocket when component unmounts
     return () => {
       console.log("WebSocketProvider unmounting - closing connection");
-      if (ws && ws.readyState === WebSocket.OPEN) {
+      // Only close the connection if it's the one we created
+      if (ws && ws === globalWebSocket && ws.readyState === WebSocket.OPEN) {
         ws.close(1000, 'Component unmounted');
+        globalWebSocket = null;
       }
     };
   }, []); // Empty dependency array ensures this runs only once on mount

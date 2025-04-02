@@ -8,6 +8,7 @@ interface WebSocketContextType {
   reconnectAttempts: number;
   connect: () => void;
   disconnect: () => void;
+  sendMessage: (message: object) => boolean; // Nueva función para enviar mensajes
 }
 
 export interface WebSocketMessage {
@@ -26,6 +27,13 @@ const WEBSOCKET_URL = 'ws://localhost:8080';
 
 // Create a singleton WebSocket instance
 let globalWebSocket: WebSocket | null = null;
+
+// Expose the WebSocket instance globally for direct access when needed
+declare global {
+  interface Window {
+    globalWebSocket: WebSocket | null;
+  }
+}
 
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
@@ -48,6 +56,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       console.log("Manually disconnecting WebSocket");
       globalWebSocket.close(1000, 'User initiated disconnect');
       globalWebSocket = null;
+      window.globalWebSocket = null;
       setIsConnected(false);
     }
   };
@@ -57,6 +66,36 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
     // Reset connection attempts on manual connect
     setReconnectAttempts(0);
     setupWebSocketConnection();
+  };
+
+  // Nueva función para enviar mensajes a través del WebSocket
+  const sendMessage = (message: object): boolean => {
+    if (globalWebSocket && globalWebSocket.readyState === WebSocket.OPEN) {
+      try {
+        const messageString = JSON.stringify(message);
+        globalWebSocket.send(messageString);
+        console.log('Message sent:', messageString);
+        
+        // Si el mensaje es de tipo user_message, agregarlo inmediatamente a los mensajes locales
+        if ('type' in message && message.type === 'user_message' && 'payload' in message && 'content' in message.payload) {
+          const userMessage: WebSocketMessage = {
+            type: 'transcript_user',
+            payload: {
+              content: message.payload.content as string
+            }
+          };
+          setMessages((prevMessages) => [...prevMessages, userMessage]);
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('Error sending message:', error);
+        return false;
+      }
+    } else {
+      console.error('WebSocket not connected');
+      return false;
+    }
   };
 
   const setupWebSocketConnection = () => {
@@ -73,11 +112,13 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         console.log("Closing existing global socket before creating a new one");
         globalWebSocket.close();
         globalWebSocket = null;
+        window.globalWebSocket = null;
       }
       
       console.log('Attempting WebSocket connection to:', WEBSOCKET_URL);
       const ws = new WebSocket(WEBSOCKET_URL);
       globalWebSocket = ws;
+      window.globalWebSocket = ws; // Expose globally
 
       ws.onopen = () => {
         console.log('WebSocket connection established');
@@ -105,6 +146,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         // Clear the globalWebSocket reference
         if (globalWebSocket === ws) {
           globalWebSocket = null;
+          window.globalWebSocket = null;
         }
         
         // Attempt to reconnect if not at max attempts and not a normal closure
@@ -143,6 +185,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       if (ws && ws === globalWebSocket && ws.readyState === WebSocket.OPEN) {
         ws.close(1000, 'Component unmounted');
         globalWebSocket = null;
+        window.globalWebSocket = null;
       }
     };
   }, []); // Empty dependency array ensures this runs only once on mount
@@ -153,7 +196,8 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       messages, 
       reconnectAttempts,
       connect,
-      disconnect
+      disconnect,
+      sendMessage
     }}>
       {children}
     </WebSocketContext.Provider>

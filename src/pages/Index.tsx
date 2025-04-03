@@ -171,10 +171,11 @@ const IndexContent = () => {
             }
           };
 
-          // Llama a startCall con el accessToken
+          // FIXED: Use a single object parameter that includes both accessToken and handlers
           retellClientRef.current.startCall({
             accessToken: accessToken,
-          }, callHandlers);
+            ...callHandlers
+          });
 
         } catch (error) {
           console.error("Error al llamar a retellClient.startCall:", error);

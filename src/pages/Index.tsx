@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { WebSocketProvider, useWebSocket } from '@/contexts/WebSocketContext';
 import Whiteboard from '@/components/Whiteboard';
@@ -60,7 +61,7 @@ const IndexContent = () => {
   }, []); // Array vacío para ejecutar solo al montar
 
   // Calcular propiedades del botón basadas en callState
-  let buttonText = 'Iniciar Llamada con Tutor';
+  let buttonText = 'Llamar a Profesor';
   let buttonVariant: 'default' | 'destructive' | 'outline' = 'default';
   let isButtonDisabled = false;
   let ButtonIcon = Phone;
@@ -120,7 +121,7 @@ const IndexContent = () => {
 
   // Change the document title
   useEffect(() => {
-    document.title = "Tu Profesor de Inglés Privado";
+    document.title = "Aprende Inglés en Casa";
   }, []);
 
   // Connect to WebSocket automatically when the component mounts
@@ -222,13 +223,13 @@ const IndexContent = () => {
   return (
     <div className="min-h-screen p-4 md:p-6 bg-slate-50">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8 text-center">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex-1"></div>
-            
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-poppins text-center text-gray-800">
-              Tu Profesor de Inglés Privado
-              <ConnectionStatus />
+        <header className="mb-8">
+          <div className="flex flex-col items-center justify-center space-y-6 py-6">
+            <h1 className="text-3xl md:text-4xl font-bold font-poppins text-gray-800 flex items-center">
+              Aprende Inglés en Casa
+              <span className="ml-3">
+                <ConnectionStatus />
+              </span>
             </h1>
             
             <Button 
@@ -236,7 +237,7 @@ const IndexContent = () => {
               onClick={handleCallButtonClick}
               disabled={isButtonDisabled || !isConnected}
               variant={buttonVariant}
-              className="ml-auto flex items-center gap-2 px-6 py-3 text-md font-semibold"
+              className="flex items-center gap-2 px-6 py-3 text-md font-semibold mt-2"
             >
               <ButtonIcon className="h-5 w-5" />
               {buttonText}

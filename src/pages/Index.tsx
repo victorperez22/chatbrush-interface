@@ -225,13 +225,7 @@ const IndexContent = () => {
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 text-center">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <img 
-                src="/logo.png" 
-                alt="Logo" 
-                className="h-16 md:h-20 w-auto" 
-              />
-            </div>
+            <div className="flex-1"></div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-poppins text-center text-gray-800">
               Tu Profesor de Inglés Privado

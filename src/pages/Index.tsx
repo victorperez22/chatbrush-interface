@@ -94,9 +94,13 @@ const IndexContent = () => {
 
         switch (message.type) {
           case 'call_initiated':
-            console.log('Evento recibido: call_initiated, ID:', message.payload.call_id);
+            console.log('[BEFORE SET STATE] Evento recibido: call_initiated, ID:', message.payload.call_id);
+            console.log('[BEFORE SET STATE] Estado actual (callState):', callState);
+            
             setActiveCallId(message.payload.call_id);
             setCallState('active');
+            
+            console.log('[AFTER SET STATE] Estado supuestamente actualizado a active.');
             break;
           case 'call_error':
             console.error('Evento recibido: call_error -', message.payload.message);

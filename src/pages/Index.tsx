@@ -10,7 +10,7 @@ import { Phone, PhoneOff } from 'lucide-react';
 
 const IndexContent = () => {
   const isMobile = useIsMobile();
-  const { connect, isConnected, sendMessage } = useWebSocket();
+  const { connect, isConnected, sendMessage, messages } = useWebSocket();
   // Define the ref at the top level of the component, not inside useEffect
   const hasTriedConnecting = React.useRef(false);
 
@@ -54,6 +54,7 @@ const IndexContent = () => {
         payload: {} 
       };
       
+      console.log('>>> Enviando:', JSON.stringify(startMsg));
       sendMessage(startMsg);
     } else if (callState === 'active' && activeCallId) {
       console.log(`Intentando terminar llamada con ID: ${activeCallId}`);
@@ -63,6 +64,7 @@ const IndexContent = () => {
         payload: { call_id: activeCallId }
       };
       
+      console.log('>>> Enviando:', JSON.stringify(endMsg));
       sendMessage(endMsg);
     }
   };
@@ -80,78 +82,53 @@ const IndexContent = () => {
       hasTriedConnecting.current = true;
       connect();
     }
-    
-    // No cleanup needed here
   }, [isConnected, connect]); // Include isConnected to retry if connection status changes
 
-  // Efecto para escuchar eventos de llamada
+  // Process incoming WebSocket messages related to calls
   useEffect(() => {
-    // Función para manejar mensajes WebSocket
-    const handleWebSocketMessage = (message: any) => {
-      if (!message) return;
+    // Process the most recent messages to handle call-related events
+    const processCallMessages = () => {
+      // Look at all messages in case we missed any
+      messages.forEach(message => {
+        if (!message) return;
 
-      switch (message.type) {
-        case 'call_initiated':
-          console.log('Evento recibido: call_initiated, ID:', message.payload.call_id);
-          setActiveCallId(message.payload.call_id);
-          setCallState('active');
-          break;
-        case 'call_error':
-          console.error('Evento recibido: call_error -', message.payload.message);
-          setCallState('error');
-          setActiveCallId(null);
-          alert(`Error al iniciar la llamada: ${message.payload.message}`);
-          break;
-        case 'call_status':
-          console.log('Evento recibido: call_status -', message.payload);
-          if (message.payload.status === 'connected') {
+        switch (message.type) {
+          case 'call_initiated':
+            console.log('Evento recibido: call_initiated, ID:', message.payload.call_id);
+            setActiveCallId(message.payload.call_id);
             setCallState('active');
-            if (message.payload.call_id) setActiveCallId(message.payload.call_id);
-          } else if (message.payload.status === 'disconnected') {
-            setCallState('idle');
+            break;
+          case 'call_error':
+            console.error('Evento recibido: call_error -', message.payload.message);
+            setCallState('error');
             setActiveCallId(null);
-            console.log(`Llamada terminada. Razón: ${message.payload.reason || 'No especificada'}`);
-          }
-          break;
-        case 'processing_error':
-          console.error('Evento recibido: processing_error -', message.payload.message);
-          setCallState('error');
-          alert(`Error del servidor: ${message.payload.message}`);
-          break;
-        case 'webhook_processing_error':
-          console.error('Evento recibido: webhook_processing_error -', message.payload.message);
-          break;
-      }
+            alert(`Error al iniciar la llamada: ${message.payload.message}`);
+            break;
+          case 'call_status':
+            console.log('Evento recibido: call_status -', message.payload);
+            if (message.payload.status === 'connected') {
+              setCallState('active');
+              if (message.payload.call_id) setActiveCallId(message.payload.call_id);
+            } else if (message.payload.status === 'disconnected') {
+              setCallState('idle');
+              setActiveCallId(null);
+              console.log(`Llamada terminada. Razón: ${message.payload.reason || 'No especificada'}`);
+            }
+            break;
+          case 'processing_error':
+            console.error('Evento recibido: processing_error -', message.payload.message);
+            setCallState('error');
+            alert(`Error del servidor: ${message.payload.message}`);
+            break;
+          case 'webhook_processing_error':
+            console.error('Evento recibido: webhook_processing_error -', message.payload.message);
+            break;
+        }
+      });
     };
 
-    // Esta lógica es para fines de demostración - en un escenario real,
-    // implementaríamos un sistema de eventos para manejar esto más elegantemente
-    const originalOnMessage = window.globalWebSocket?.onmessage;
-    if (window.globalWebSocket) {
-      // FIX: Using an arrow function to preserve 'this' context
-      window.globalWebSocket.onmessage = function(event) {
-        try {
-          const data = JSON.parse(event.data);
-          handleWebSocketMessage(data);
-        } catch (error) {
-          console.error('Error processing WebSocket message in call handler:', error);
-        }
-        
-        // Mantener el comportamiento original
-        if (originalOnMessage) {
-          // Call the original handler with the correct 'this' context
-          originalOnMessage.call(this, event);
-        }
-      };
-    }
-
-    // Cleanup
-    return () => {
-      if (window.globalWebSocket) {
-        window.globalWebSocket.onmessage = originalOnMessage;
-      }
-    };
-  }, []);
+    processCallMessages();
+  }, [messages]); // Re-run when messages array changes
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">

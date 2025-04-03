@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { WebSocketProvider, useWebSocket } from '@/contexts/WebSocketContext';
 import ConversationPanel from '@/components/ConversationPanel';
@@ -17,6 +18,17 @@ const IndexContent = () => {
   // Estados para gestionar la llamada
   const [callState, setCallState] = useState('idle'); // Posibles valores: 'idle', 'initiating', 'active', 'error'
   const [activeCallId, setActiveCallId] = useState<string | null>(null); // Para guardar el ID de la llamada activa
+
+  // NUEVO useEffect para observar cambios en callState
+  useEffect(() => {
+    console.log(`[useEffect callState] El estado 'callState' AHORA es: ${callState}`);
+    
+    // Opcional: Añadir un toast aquí también podría ser útil
+    if (callState === 'active') {
+      toast.info(`Debug: callState ahora es '${callState}'`);
+    }
+
+  }, [callState]); // <-- Dependencia ÚNICA: callState
 
   // Calcular propiedades del botón basadas en callState
   let buttonText = 'Iniciar Llamada con Tutor';

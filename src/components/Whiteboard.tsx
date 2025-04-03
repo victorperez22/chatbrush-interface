@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useWebSocket, WebSocketMessage } from '@/contexts/WebSocketContext';
-import { Pencil } from 'lucide-react';
+import { Pencil, Sparkles } from 'lucide-react';
 
 const Whiteboard = () => {
   const { messages, isConnected } = useWebSocket();
-
+  const contentRef = useRef<HTMLDivElement>(null);
+  
   // Function to generate HTML content for the whiteboard based on messages
   const renderWhiteboardContent = () => {
     const relevantMessages = messages.filter(msg => 
@@ -15,8 +16,10 @@ const Whiteboard = () => {
     
     if (relevantMessages.length === 0) {
       return (
-        <div className="text-center text-slate-400 mt-10">
-          <p>{isConnected ? 'El contenido de apoyo aparecerá aquí...' : 'La pizarra se actualizará aquí...'}</p>
+        <div className="text-center text-white/80 mt-10 p-10 animate-pulse">
+          <Sparkles className="mx-auto h-12 w-12 mb-4 text-yellow-300" />
+          <p className="text-xl">{isConnected ? 'El contenido de apoyo aparecerá aquí...' : 'La pizarra se actualizará aquí...'}</p>
+          <p className="mt-2 text-sm opacity-80">Inicia una llamada con el tutor para comenzar</p>
         </div>
       );
     }
@@ -46,36 +49,46 @@ const Whiteboard = () => {
     }
 
     return (
-      <div className="whiteboard-content space-y-4">
+      <div className="whiteboard-content space-y-4 transition-opacity duration-300 ease-in-out">
         {currentContent && (
           <div 
-            className="prose max-w-none dark:prose-invert"
+            className="prose max-w-none prose-invert prose-headings:text-yellow-300 prose-a:text-blue-400 hover:prose-a:text-blue-300 prose-blockquote:border-l-yellow-300"
             dangerouslySetInnerHTML={{ __html: currentContent }}
           />
         )}
         {hasImage && (
-          <div className="mt-4">
+          <div className="mt-4 transform hover:scale-[1.01] transition-transform duration-300">
             <img 
               src={imageUrl} 
               alt="Whiteboard content" 
-              className="max-w-full rounded-lg border border-slate-200"
+              className="max-w-full rounded-lg border border-white/20 shadow-xl"
             />
           </div>
         )}
       </div>
     );
   };
+  
+  // Auto-scroll to bottom whenever content changes
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   return (
-    <div className="h-full bg-white rounded-lg shadow-md border border-slate-200">
-      <div className="p-4 border-b border-slate-200 bg-white">
-        <h2 className="text-lg font-semibold flex items-center gap-2 text-purple-700">
-          <Pencil className="h-5 w-5" />
-          Pizarra Interactiva
+    <div className="h-full bg-black/20 rounded-lg shadow-xl border border-white/20 backdrop-blur-lg">
+      <div className="p-4 border-b border-white/20 backdrop-blur-md">
+        <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
+          <Pencil className="h-5 w-5 text-yellow-300" />
+          <span className="bg-gradient-to-r from-yellow-200 to-yellow-50 text-transparent bg-clip-text">
+            Pizarra Interactiva
+          </span>
         </h2>
       </div>
       
       <div 
+        ref={contentRef}
         className="p-6 overflow-y-auto h-[calc(100%-4rem)] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
         id="interactive-pizarra"
       >

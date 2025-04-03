@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { MessageSquare, Send } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { ScrollArea } from './ui/scroll-area';
 
 const ConversationPanel = () => {
   const { messages, isConnected, connect, sendMessage } = useWebSocket();
@@ -71,7 +72,7 @@ const ConversationPanel = () => {
   return (
     <div className="flex flex-col h-full bg-white rounded-lg shadow-md border border-slate-200">
       <div className="p-4 border-b border-slate-200 bg-white">
-        <h2 className="text-lg font-semibold flex items-center gap-2 text-blue-700">
+        <h2 className="text-lg font-semibold flex items-center gap-2 text-indigo-700">
           <MessageSquare className="h-5 w-5" />
           Conversación
         </h2>
@@ -80,7 +81,7 @@ const ConversationPanel = () => {
       <div 
         ref={scrollRef}
         id="conversation-log"
-        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
+        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent flex flex-col"
       >
         {transcriptMessages.length === 0 ? (
           <div className="text-center text-slate-400 mt-10">
@@ -109,6 +110,7 @@ const ConversationPanel = () => {
             onClick={handleSendMessage}
             disabled={!isConnected || userInput.trim() === ''}
             size="sm"
+            className="bg-indigo-600 hover:bg-indigo-700"
           >
             <Send className="mr-1 h-4 w-4" />
             Enviar
@@ -127,12 +129,12 @@ const MessageBubble = ({ message }: { message: WebSocketMessage }) => {
     <div className={cn(
       "max-w-[80%] p-3 rounded-lg",
       isUser 
-        ? "bg-blue-50 text-slate-700 self-end ml-auto rounded-br-none border border-blue-100" 
+        ? "bg-gray-200 text-slate-800 self-end ml-auto rounded-br-none" 
         : "bg-indigo-600 text-white self-start rounded-bl-none shadow-sm"
     )}>
       <div className={cn(
         "font-medium mb-1",
-        isUser ? "text-blue-700" : "text-white/90"
+        isUser ? "text-slate-700" : "text-white/90"
       )}>
         {isUser ? 'Usuario' : 'IA'}:
       </div>

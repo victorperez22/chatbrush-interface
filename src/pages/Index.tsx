@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { WebSocketProvider, useWebSocket } from '@/contexts/WebSocketContext';
 import ConversationPanel from '@/components/ConversationPanel';
@@ -85,65 +84,38 @@ const IndexContent = () => {
     }
   }, [isConnected, connect]); // Include isConnected to retry if connection status changes
 
-  // Process incoming WebSocket messages related to calls
+  // Process incoming WebSocket messages related to calls (DEBUG SIMPLIFICADO)
   useEffect(() => {
-    // Get the most recent call-related messages only
-    const callRelatedMessages = messages
-      .filter(message => message && [
-        'call_initiated',
-        'call_error',
-        'call_status',
-        'processing_error',
-        'webhook_processing_error'
-      ].includes(message.type));
+    console.log('[useEffect messages] Se ejecutó. Longitud de messages:', messages.length); // Log 1: ¿Se ejecuta el efecto?
 
-    // Process only the latest message to avoid duplicate processing
-    if (callRelatedMessages.length > 0) {
-      const latestMessage = callRelatedMessages[callRelatedMessages.length - 1];
-
-      switch (latestMessage.type) {
-        case 'call_initiated':
-          console.log('[BEFORE SET STATE] Evento recibido: call_initiated, ID:', latestMessage.payload.call_id);
-          console.log('[BEFORE SET STATE] Estado actual (callState):', callState);
-          
-          setActiveCallId(latestMessage.payload.call_id);
-          setCallState('active');
-          
-          console.log('[AFTER SET STATE] Estado supuestamente actualizado a active.');
-          
-          toast.success('Llamada iniciada correctamente');
-          break;
-        case 'call_error':
-          console.error('Evento recibido: call_error -', latestMessage.payload.message);
-          setCallState('error');
-          setActiveCallId(null);
-          toast.error(`Error al iniciar la llamada: ${latestMessage.payload.message}`);
-          break;
-        case 'call_status':
-          console.log('Evento recibido: call_status -', latestMessage.payload);
-          if (latestMessage.payload.status === 'connected') {
-            setCallState('active');
-            if (latestMessage.payload.call_id) setActiveCallId(latestMessage.payload.call_id);
-            toast.success('Conexión establecida con el tutor');
-          } else if (latestMessage.payload.status === 'disconnected') {
-            setCallState('idle');
-            setActiveCallId(null);
-            toast.info(`Llamada terminada. ${latestMessage.payload.reason ? `Razón: ${latestMessage.payload.reason}` : ''}`);
-            console.log(`Llamada terminada. Razón: ${latestMessage.payload.reason || 'No especificada'}`);
-          }
-          break;
-        case 'processing_error':
-          console.error('Evento recibido: processing_error -', latestMessage.payload.message);
-          setCallState('error');
-          toast.error(`Error del servidor: ${latestMessage.payload.message}`);
-          break;
-        case 'webhook_processing_error':
-          console.error('Evento recibido: webhook_processing_error -', latestMessage.payload.message);
-          toast.error(`Error de webhook: ${latestMessage.payload.message}`);
-          break;
-      }
+    if (messages.length === 0) {
+      console.log('[useEffect messages] No hay mensajes para procesar.');
+      return; // Salir si no hay mensajes
     }
-  }, [messages]); // Re-run when messages array changes
+
+    // Obtener el ÚLTIMO mensaje recibido, sea cual sea su tipo
+    const latestMessage = messages[messages.length - 1];
+    console.log('[useEffect messages] Último mensaje:', latestMessage); // Log 2: ¿Cuál es el último mensaje?
+
+    // Comprobar si el último mensaje es el que nos interesa
+    if (latestMessage && latestMessage.type === 'call_initiated') {
+      console.log('[useEffect messages] ¡Último mensaje ES call_initiated!'); // Log 3: ¿Detectamos el tipo?
+
+      // --- Aquí estaba la lógica del switch ---
+      // Intentemos actualizar el estado directamente aquí para probar
+
+      console.log('[useEffect messages - BEFORE SET STATE] Estado actual (callState):', callState); // Log 4: Estado ANTES
+
+      setActiveCallId(latestMessage.payload.call_id);
+      setCallState('active');
+
+      console.log('[useEffect messages - AFTER SET STATE] Estado supuestamente actualizado a active.'); // Log 5: Log DESPUÉS
+
+    } else if (latestMessage) {
+      console.log(`[useEffect messages] Último mensaje NO es call_initiated (Tipo: ${latestMessage.type})`); // Log 6: Si no es el tipo esperado
+    }
+
+  }, [messages]); // Dependencia principal: messages
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">

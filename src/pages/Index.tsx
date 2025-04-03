@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { WebSocketProvider, useWebSocket } from '@/contexts/WebSocketContext';
 import ConversationPanel from '@/components/ConversationPanel';
 import Whiteboard from '@/components/Whiteboard';
@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff } from 'lucide-react';
 import { toast } from "sonner";
+import { RetellWebClient } from "retell-client-js-sdk";
 
 const IndexContent = () => {
   const isMobile = useIsMobile();
@@ -18,6 +19,10 @@ const IndexContent = () => {
   // Estados para gestionar la llamada
   const [callState, setCallState] = useState('idle'); // Posibles valores: 'idle', 'initiating', 'active', 'error'
   const [activeCallId, setActiveCallId] = useState<string | null>(null); // Para guardar el ID de la llamada activa
+  
+  // Referencia para el SDK de Retell y estado para saber si está listo
+  const retellClientRef = useRef<RetellWebClient | null>(null);
+  const [isRetellReady, setIsRetellReady] = useState(false);
 
   // NUEVO useEffect para observar cambios en callState
   useEffect(() => {
@@ -29,6 +34,32 @@ const IndexContent = () => {
     }
 
   }, [callState]); // <-- Dependencia ÚNICA: callState
+  
+  // useEffect para inicializar el SDK de Retell
+  useEffect(() => {
+    console.log("Inicializando RetellWebClient SDK...");
+    retellClientRef.current = new RetellWebClient();
+
+    // Escuchar eventos globales del SDK (opcional pero útil para depurar)
+    retellClientRef.current.on('audio_started', () => console.log('Retell SDK: Flujo de audio iniciado.'));
+    retellClientRef.current.on('audio_stopped', () => console.log('Retell SDK: Flujo de audio detenido.'));
+    retellClientRef.current.on('error', (error: string) => {
+      console.error('Retell SDK: Error global ->', error);
+      setCallState('error');
+      toast.error(`Error del SDK de Retell: ${error}`);
+      setActiveCallId(null); // Limpiar ID si hay error del SDK
+    });
+
+    setIsRetellReady(true); // Marcar como listo
+    console.log("RetellWebClient SDK inicializado y listo.");
+
+    // Función de limpieza al desmontar
+    return () => {
+      console.log("Desmontando componente, deteniendo llamada si está activa...");
+      retellClientRef.current?.stopCall();
+      retellClientRef.current = null; // Limpiar referencia
+    }
+  }, []); // Array vacío para ejecutar solo al montar
 
   // Calcular propiedades del botón basadas en callState
   let buttonText = 'Iniciar Llamada con Tutor';
@@ -68,16 +99,19 @@ const IndexContent = () => {
       
       console.log('>>> Enviando:', JSON.stringify(startMsg));
       sendMessage(startMsg);
-    } else if (callState === 'active' && activeCallId) {
-      console.log(`Intentando terminar llamada con ID: ${activeCallId}`);
+    } else if (callState === 'active') {
+      console.log("Deteniendo llamada vía Retell SDK...");
+      retellClientRef.current?.stopCall();
       
-      const endMsg = {
-        type: 'request_end_call',
-        payload: { call_id: activeCallId }
-      };
-      
-      console.log('>>> Enviando:', JSON.stringify(endMsg));
-      sendMessage(endMsg);
+      // Opcional: notificar al backend también
+      if (activeCallId) {
+        console.log(`Enviando request_end_call para ID: ${activeCallId}`);
+        const endMsg = {
+          type: 'request_end_call',
+          payload: { call_id: activeCallId }
+        };
+        sendMessage(endMsg);
+      }
     }
   };
 
@@ -96,35 +130,87 @@ const IndexContent = () => {
     }
   }, [isConnected, connect]); // Include isConnected to retry if connection status changes
 
-  // Process incoming WebSocket messages related to calls (DEBUG SIMPLIFICADO)
+  // Process incoming WebSocket messages related to calls
   useEffect(() => {
-    console.log('[useEffect messages] Se ejecutó. Longitud de messages:', messages.length); // Log 1: ¿Se ejecuta el efecto?
+    console.log('[useEffect messages] Se ejecutó. Longitud de messages:', messages.length);
 
     if (messages.length === 0) {
       console.log('[useEffect messages] No hay mensajes para procesar.');
       return; // Salir si no hay mensajes
     }
 
-    // Obtener el ÚLTIMO mensaje recibido, sea cual sea su tipo
+    // Obtener el ÚLTIMO mensaje recibido
     const latestMessage = messages[messages.length - 1];
-    console.log('[useEffect messages] Último mensaje:', latestMessage); // Log 2: ¿Cuál es el último mensaje?
+    console.log('[useEffect messages] Último mensaje:', latestMessage);
 
-    // Comprobar si el último mensaje es el que nos interesa
-    if (latestMessage && latestMessage.type === 'call_initiated') {
-      console.log('[useEffect messages] ¡Último mensaje ES call_initiated!'); // Log 3: ¿Detectamos el tipo?
+    // Procesar el último mensaje según su tipo
+    if (latestMessage && latestMessage.type === 'web_call_details') {
+      console.log("[WS Mensaje] Recibidos detalles para llamada WebRTC:", latestMessage.payload);
+      const accessToken = latestMessage.payload.access_token;
+      
+      if (retellClientRef.current && isRetellReady && accessToken && callState !== 'active') {
+        console.log(`Iniciando llamada Retell SDK con Access Token...`);
+        
+        try {
+          const callHandlers = {
+            onOpen: () => {
+              console.log("Retell SDK: Llamada abierta (Conectado!)");
+              setCallState('active');
+              toast.success("Conectado con el Tutor IA");
+            },
+            onError: (error: string) => {
+              console.error("Retell SDK Error en Llamada:", error);
+              setCallState('error');
+              setActiveCallId(null);
+              toast.error(`Error en llamada: ${error}`);
+              retellClientRef.current?.stopCall();
+            },
+            onClose: () => {
+              console.log("Retell SDK: Llamada cerrada.");
+              // Esperar 'call_status: disconnected' del backend via WS
+            }
+          };
 
-      // --- Aquí estaba la lógica del switch ---
-      // Intentemos actualizar el estado directamente aquí para probar
+          // Llama a startCall con el accessToken
+          retellClientRef.current.startCall({
+            accessToken: accessToken,
+          }, callHandlers);
 
-      console.log('[useEffect messages - BEFORE SET STATE] Estado actual (callState):', callState); // Log 4: Estado ANTES
-
-      setActiveCallId(latestMessage.payload.call_id);
-      setCallState('active');
-
-      console.log('[useEffect messages - AFTER SET STATE] Estado supuestamente actualizado a active.'); // Log 5: Log DESPUÉS
-
-    } else if (latestMessage) {
-      console.log(`[useEffect messages] Último mensaje NO es call_initiated (Tipo: ${latestMessage.type})`); // Log 6: Si no es el tipo esperado
+        } catch (error) {
+          console.error("Error al llamar a retellClient.startCall:", error);
+          setCallState('error');
+          setActiveCallId(null);
+          toast.error("No se pudo iniciar la llamada con el SDK.");
+        }
+      } else {
+        if (!retellClientRef.current || !isRetellReady) console.error("SDK no listo.");
+        if (!accessToken) console.error("Falta Access Token.");
+        if (callState === 'active') console.warn("Intento de iniciar llamada cuando ya está activa.");
+        setCallState('error');
+        toast.error("Error interno al preparar la llamada.");
+      }
+    } else if (latestMessage && latestMessage.type === 'call_status') {
+      // Manejo de call_status (importante para 'disconnected')
+      console.log('[WS Mensaje] Recibido call_status:', latestMessage.payload);
+      if (latestMessage.payload.status === 'disconnected') {
+        console.log(`Llamada terminada (recibido via WS). Razón: ${latestMessage.payload.reason}`);
+        setCallState('idle');
+        setActiveCallId(null);
+        toast.info(`Llamada terminada.`);
+        // Asegurarse de que el SDK también se detenga
+        retellClientRef.current?.stopCall();
+      } else if (latestMessage.payload.status === 'connected') {
+        // Confirmación secundaria
+        console.log("Backend confirma estado conectado.");
+        if (callState !== 'active') setCallState('active');
+        if (latestMessage.payload.call_id) setActiveCallId(latestMessage.payload.call_id);
+      }
+    } else if (latestMessage && latestMessage.type === 'call_error') {
+      // Manejo de call_error
+      console.error('[WS Mensaje] Recibido call_error:', latestMessage.payload.message);
+      setCallState('error');
+      setActiveCallId(null);
+      toast.error(`Error del servidor al iniciar llamada: ${latestMessage.payload.message}`);
     }
 
   }, [messages]); // Dependencia principal: messages

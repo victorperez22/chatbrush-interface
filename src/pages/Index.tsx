@@ -103,6 +103,11 @@ const IndexContent = () => {
       console.log("Deteniendo llamada vía Retell SDK...");
       retellClientRef.current?.stopCall();
       
+      // CAMBIO: Forzar estado a idle INMEDIATAMENTE después de pedir detener
+      console.log("Cambiando estado manualmente a 'idle' al solicitar fin.");
+      setCallState('idle');
+      setActiveCallId(null); // Limpiar ID también
+      
       // Opcional: notificar al backend también
       if (activeCallId) {
         console.log(`Enviando request_end_call para ID: ${activeCallId}`);
@@ -258,3 +263,4 @@ const Index = () => {
 };
 
 export default Index;
+

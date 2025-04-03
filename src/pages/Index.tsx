@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { WebSocketProvider, useWebSocket } from '@/contexts/WebSocketContext';
 import ConversationPanel from '@/components/ConversationPanel';
@@ -152,11 +151,14 @@ const IndexContent = () => {
         console.log(`Iniciando llamada Retell SDK con Access Token...`);
         
         try {
+          // Define handlers with simpler implementation for onOpen
           const callHandlers = {
             onOpen: () => {
-              console.log("Retell SDK: Llamada abierta (Conectado!)");
+              console.log(">>> DENTRO DE onOpen DEL SDK <<< ¡Conexión de audio establecida!");
               setCallState('active');
-              toast.success("Conectado con el Tutor IA");
+              console.log(">>> DENTRO DE onOpen DEL SDK <<< Estado supuestamente cambiado a 'active'.");
+              // Comentado temporalmente para descartar interferencias
+              // toast.success("Conectado con el Tutor IA");
             },
             onError: (error: string) => {
               console.error("Retell SDK Error en Llamada:", error);
@@ -171,10 +173,16 @@ const IndexContent = () => {
             }
           };
 
-          // FIXED: Use a single object parameter that includes both accessToken and handlers
+          // Log the handlers before calling startCall
+          console.log("Llamando a startCall con handlers:", callHandlers);
+          
+          // IMPORTANT: According to Retell SDK documentation, the correct way to call startCall
+          // is with a single object that contains both accessToken and handler callbacks
           retellClientRef.current.startCall({
-            accessToken: accessToken,
-            ...callHandlers
+            accessToken,
+            onOpen: callHandlers.onOpen,
+            onError: callHandlers.onError,
+            onClose: callHandlers.onClose
           });
 
         } catch (error) {

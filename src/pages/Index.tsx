@@ -86,7 +86,7 @@ const IndexContent = () => {
 
   // Efecto para escuchar eventos de llamada
   useEffect(() => {
-    // Suscripción a eventos de llamada desde el WebSocketContext
+    // Función para manejar mensajes WebSocket
     const handleWebSocketMessage = (message: any) => {
       if (!message) return;
 
@@ -128,7 +128,8 @@ const IndexContent = () => {
     // implementaríamos un sistema de eventos para manejar esto más elegantemente
     const originalOnMessage = window.globalWebSocket?.onmessage;
     if (window.globalWebSocket) {
-      window.globalWebSocket.onmessage = (event) => {
+      // FIX: Using an arrow function to preserve 'this' context
+      window.globalWebSocket.onmessage = function(event) {
         try {
           const data = JSON.parse(event.data);
           handleWebSocketMessage(data);
@@ -138,7 +139,8 @@ const IndexContent = () => {
         
         // Mantener el comportamiento original
         if (originalOnMessage) {
-          originalOnMessage(event);
+          // Call the original handler with the correct 'this' context
+          originalOnMessage.call(this, event);
         }
       };
     }

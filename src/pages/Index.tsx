@@ -121,7 +121,7 @@ const IndexContent = () => {
 
   // Change the document title
   useEffect(() => {
-    document.title = "AI Tutor Interface";
+    document.title = "Tu Profesor de Inglés Privado";
   }, []);
 
   // Connect to WebSocket automatically when the component mounts
@@ -225,8 +225,16 @@ const IndexContent = () => {
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 text-center relative">
           <div className="flex flex-col items-center justify-between mb-6 md:flex-row">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-roboto text-center text-white mb-6 md:mb-0 mx-auto md:mx-0">
-              <span className="text-gradient">AI Tutor Interface</span>
+            <div className="flex items-center gap-4">
+              <img 
+                src="/logo.png" 
+                alt="Logo" 
+                className="h-16 md:h-20 w-auto float-animation" 
+              />
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-roboto text-center text-white mb-6 md:mb-0 mx-auto">
+              <span className="text-gradient">Tú Profesor de Inglés Privado</span>
               <ConnectionStatus />
             </h1>
             

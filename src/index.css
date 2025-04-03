@@ -74,7 +74,7 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    background: linear-gradient(135deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
+    background: linear-gradient(135deg, #4158D0 0%, #FFCC70 100%);
     background-size: 400% 400%;
     animation: gradient-animation 15s ease infinite;
   }
@@ -200,4 +200,12 @@
 /* Floating animation */
 .float-animation {
   animation: float 6s ease-in-out infinite;
+}
+
+/* Whiteboard style */
+.whiteboard-content {
+  background-color: #fff;
+  border-radius: 8px;
+  min-height: 100%;
+  padding: 1.5rem;
 }

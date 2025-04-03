@@ -131,37 +131,35 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
           
           console.log('WebSocket message received:', data);
           
-          // Handle different message types
-          switch (data.type) {
-            case 'transcript_ai':
-            case 'transcript_user':
-            case 'transcript_user_final':
-            case 'update_pizarra_text':
-            case 'append_pizarra_text':
-            case 'clear_pizarra':
-            case 'show_image_pizarra':
-              // Add standard messages to state
-              if (data && data.type && data.payload) {
-                setMessages((prevMessages) => [...prevMessages, data]);
-              }
-              break;
-              
-            // Los nuevos tipos de mensajes de llamada se manejarán en el componente Index
-            case 'call_initiated':
-            case 'call_error':
-            case 'call_status':
-            case 'processing_error':
-            case 'webhook_processing_error':
-              // Estos son manejados por el efecto en IndexContent
-              console.log(`Call-related message received: ${data.type}`);
-              break;
-              
-            default:
-              console.log(`Unknown message type received: ${data.type}`);
-              // Podríamos añadir mensajes desconocidos a la lista si es necesario
-              if (data && data.type && data.payload) {
-                setMessages((prevMessages) => [...prevMessages, data]);
-              }
+          // VALIDAR que el mensaje tenga la estructura mínima esperada
+          if (data && data.type && data.payload) {
+            // Log específico para mensajes de llamada (opcional)
+            if ([
+              'call_initiated',
+              'call_error',
+              'call_status',
+              'processing_error',
+              'webhook_processing_error'
+            ].includes(data.type)) {
+              console.log(`Processing call-related message: ${data.type}`);
+            } else if ([
+              'transcript_ai',
+              'transcript_user',
+              'transcript_user_final',
+              'update_pizarra_text',
+              'append_pizarra_text',
+              'clear_pizarra',
+              'show_image_pizarra'
+            ].includes(data.type)) {
+              console.log(`Processing standard message: ${data.type}`);
+            } else {
+              console.log(`Processing unknown/other message type: ${data.type}`);
+            }
+            
+            // AÑADIR *TODOS* los mensajes válidos al estado
+            setMessages((prevMessages) => [...prevMessages, data]);
+          } else {
+            console.warn("Mensaje WebSocket recibido con formato inválido:", data);
           }
         } catch (error) {
           console.error('Error handling WebSocket message:', error);

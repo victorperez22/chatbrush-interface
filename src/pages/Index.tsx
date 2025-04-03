@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { WebSocketProvider, useWebSocket } from '@/contexts/WebSocketContext';
 import ConversationPanel from '@/components/ConversationPanel';
@@ -151,38 +152,29 @@ const IndexContent = () => {
         console.log(`Iniciando llamada Retell SDK con Access Token...`);
         
         try {
-          // Define handlers with simpler implementation for onOpen
-          const callHandlers = {
-            onOpen: () => {
-              console.log(">>> DENTRO DE onOpen DEL SDK <<< ¡Conexión de audio establecida!");
-              setCallState('active');
-              console.log(">>> DENTRO DE onOpen DEL SDK <<< Estado supuestamente cambiado a 'active'.");
-              // Comentado temporalmente para descartar interferencias
-              // toast.success("Conectado con el Tutor IA");
-            },
-            onError: (error: string) => {
-              console.error("Retell SDK Error en Llamada:", error);
-              setCallState('error');
-              setActiveCallId(null);
-              toast.error(`Error en llamada: ${error}`);
-              retellClientRef.current?.stopCall();
-            },
-            onClose: () => {
-              console.log("Retell SDK: Llamada cerrada.");
-              // Esperar 'call_status: disconnected' del backend via WS
-            }
-          };
-
-          // Log the handlers before calling startCall
-          console.log("Llamando a startCall con handlers:", callHandlers);
+          // Log the handlers before calling startCall to debug
+          console.log("Llamando a startCall con accessToken");
           
-          // IMPORTANT: According to Retell SDK documentation, the correct way to call startCall
-          // is with a single object that contains both accessToken and handler callbacks
+          // FIXED: According to Retell SDK documentation, this is the correct way
+          // to call startCall with the accessToken. The callbacks should be registered
+          // using the .on() method, not passed to startCall directly
+          retellClientRef.current.on('call_started', () => {
+            console.log(">>> EVENTO call_started <<< ¡Conexión de audio establecida!");
+            setCallState('active');
+            console.log(">>> EVENTO call_started <<< Estado cambiado a 'active'.");
+            // Comentado temporalmente para descartar interferencias
+            // toast.success("Conectado con el Tutor IA");
+          });
+          
+          retellClientRef.current.on('call_stopped', () => {
+            console.log("Retell SDK: Llamada cerrada.");
+            setCallState('idle');
+            setActiveCallId(null);
+          });
+          
+          // Start the call with just the accessToken
           retellClientRef.current.startCall({
-            accessToken,
-            onOpen: callHandlers.onOpen,
-            onError: callHandlers.onError,
-            onClose: callHandlers.onClose
+            accessToken
           });
 
         } catch (error) {

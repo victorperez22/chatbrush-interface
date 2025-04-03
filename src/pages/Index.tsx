@@ -7,6 +7,7 @@ import ConnectionStatus from '@/components/ConnectionStatus';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff } from 'lucide-react';
+import { toast } from "sonner";
 
 const IndexContent = () => {
   const isMobile = useIsMobile();
@@ -41,7 +42,7 @@ const IndexContent = () => {
     if (!isConnected) {
       console.error('WebSocket no conectado. No se puede iniciar/terminar llamada.');
       setCallState('error');
-      alert('Error: No se pudo conectar con el servidor. Intenta recargar la página.');
+      toast.error('Error: No se pudo conectar con el servidor. Intenta recargar la página.');
       return;
     }
 
@@ -86,52 +87,62 @@ const IndexContent = () => {
 
   // Process incoming WebSocket messages related to calls
   useEffect(() => {
-    // Process the most recent messages to handle call-related events
-    const processCallMessages = () => {
-      // Look at all messages in case we missed any
-      messages.forEach(message => {
-        if (!message) return;
+    // Get the most recent call-related messages only
+    const callRelatedMessages = messages
+      .filter(message => message && [
+        'call_initiated',
+        'call_error',
+        'call_status',
+        'processing_error',
+        'webhook_processing_error'
+      ].includes(message.type));
 
-        switch (message.type) {
-          case 'call_initiated':
-            console.log('[BEFORE SET STATE] Evento recibido: call_initiated, ID:', message.payload.call_id);
-            console.log('[BEFORE SET STATE] Estado actual (callState):', callState);
-            
-            setActiveCallId(message.payload.call_id);
+    // Process only the latest message to avoid duplicate processing
+    if (callRelatedMessages.length > 0) {
+      const latestMessage = callRelatedMessages[callRelatedMessages.length - 1];
+
+      switch (latestMessage.type) {
+        case 'call_initiated':
+          console.log('[BEFORE SET STATE] Evento recibido: call_initiated, ID:', latestMessage.payload.call_id);
+          console.log('[BEFORE SET STATE] Estado actual (callState):', callState);
+          
+          setActiveCallId(latestMessage.payload.call_id);
+          setCallState('active');
+          
+          console.log('[AFTER SET STATE] Estado supuestamente actualizado a active.');
+          
+          toast.success('Llamada iniciada correctamente');
+          break;
+        case 'call_error':
+          console.error('Evento recibido: call_error -', latestMessage.payload.message);
+          setCallState('error');
+          setActiveCallId(null);
+          toast.error(`Error al iniciar la llamada: ${latestMessage.payload.message}`);
+          break;
+        case 'call_status':
+          console.log('Evento recibido: call_status -', latestMessage.payload);
+          if (latestMessage.payload.status === 'connected') {
             setCallState('active');
-            
-            console.log('[AFTER SET STATE] Estado supuestamente actualizado a active.');
-            break;
-          case 'call_error':
-            console.error('Evento recibido: call_error -', message.payload.message);
-            setCallState('error');
+            if (latestMessage.payload.call_id) setActiveCallId(latestMessage.payload.call_id);
+            toast.success('Conexión establecida con el tutor');
+          } else if (latestMessage.payload.status === 'disconnected') {
+            setCallState('idle');
             setActiveCallId(null);
-            alert(`Error al iniciar la llamada: ${message.payload.message}`);
-            break;
-          case 'call_status':
-            console.log('Evento recibido: call_status -', message.payload);
-            if (message.payload.status === 'connected') {
-              setCallState('active');
-              if (message.payload.call_id) setActiveCallId(message.payload.call_id);
-            } else if (message.payload.status === 'disconnected') {
-              setCallState('idle');
-              setActiveCallId(null);
-              console.log(`Llamada terminada. Razón: ${message.payload.reason || 'No especificada'}`);
-            }
-            break;
-          case 'processing_error':
-            console.error('Evento recibido: processing_error -', message.payload.message);
-            setCallState('error');
-            alert(`Error del servidor: ${message.payload.message}`);
-            break;
-          case 'webhook_processing_error':
-            console.error('Evento recibido: webhook_processing_error -', message.payload.message);
-            break;
-        }
-      });
-    };
-
-    processCallMessages();
+            toast.info(`Llamada terminada. ${latestMessage.payload.reason ? `Razón: ${latestMessage.payload.reason}` : ''}`);
+            console.log(`Llamada terminada. Razón: ${latestMessage.payload.reason || 'No especificada'}`);
+          }
+          break;
+        case 'processing_error':
+          console.error('Evento recibido: processing_error -', latestMessage.payload.message);
+          setCallState('error');
+          toast.error(`Error del servidor: ${latestMessage.payload.message}`);
+          break;
+        case 'webhook_processing_error':
+          console.error('Evento recibido: webhook_processing_error -', latestMessage.payload.message);
+          toast.error(`Error de webhook: ${latestMessage.payload.message}`);
+          break;
+      }
+    }
   }, [messages]); // Re-run when messages array changes
 
   return (

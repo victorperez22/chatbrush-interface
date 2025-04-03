@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { WebSocketProvider, useWebSocket } from '@/contexts/WebSocketContext';
-import ConversationPanel from '@/components/ConversationPanel';
 import Whiteboard from '@/components/Whiteboard';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -242,13 +241,9 @@ const IndexContent = () => {
         </div>
       </header>
 
-      <div className={`grid ${isMobile ? 'grid-rows-2 gap-6' : 'grid-cols-2 gap-8'} h-[calc(100vh-12rem)]`}>
-        <div className="h-full">
-          <ConversationPanel />
-        </div>
-        <div className="h-full">
-          <Whiteboard />
-        </div>
+      {/* Whiteboard container - now takes full width */}
+      <div className="h-[calc(100vh-12rem)] w-full">
+        <Whiteboard />
       </div>
     </div>
   );
@@ -263,4 +258,3 @@ const Index = () => {
 };
 
 export default Index;
-

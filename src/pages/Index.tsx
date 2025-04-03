@@ -5,7 +5,7 @@ import Whiteboard from '@/components/Whiteboard';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
-import { Phone, PhoneOff, Sparkles } from 'lucide-react';
+import { Phone, PhoneOff } from 'lucide-react';
 import { toast } from "sonner";
 import { RetellWebClient } from "retell-client-js-sdk";
 
@@ -221,20 +221,20 @@ const IndexContent = () => {
   }, [messages]); // Dependencia principal: messages
 
   return (
-    <div className="min-h-screen p-4 md:p-6">
+    <div className="min-h-screen p-4 md:p-6 bg-slate-50">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8 text-center relative">
-          <div className="flex flex-col items-center justify-between mb-6 md:flex-row">
+        <header className="mb-8 text-center">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <img 
                 src="/logo.png" 
                 alt="Logo" 
-                className="h-16 md:h-20 w-auto float-animation" 
+                className="h-16 md:h-20 w-auto" 
               />
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-roboto text-center text-white mb-6 md:mb-0 mx-auto">
-              <span className="text-gradient">Tú Profesor de Inglés Privado</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-poppins text-center text-gray-800">
+              Tu Profesor de Inglés Privado
               <ConnectionStatus />
             </h1>
             
@@ -243,17 +243,16 @@ const IndexContent = () => {
               onClick={handleCallButtonClick}
               disabled={isButtonDisabled || !isConnected}
               variant={buttonVariant}
-              className={`ml-auto animated-button ${callState === 'idle' ? 'animated-call-button' : ''} flex items-center gap-2 px-6 py-3 text-md font-semibold transition-all duration-300`}
+              className="ml-auto flex items-center gap-2 px-6 py-3 text-md font-semibold"
             >
               <ButtonIcon className="h-5 w-5" />
               {buttonText}
-              {callState === 'idle' && <Sparkles className="h-4 w-4 ml-1 text-yellow-300" />}
             </Button>
           </div>
         </header>
 
-        {/* Whiteboard container with glassmorphism effect */}
-        <div className="h-[calc(100vh-12rem)] w-full glassmorphism p-1 float-animation">
+        {/* Whiteboard container with elegant styling */}
+        <div className="h-[calc(100vh-12rem)] w-full bg-white border border-gray-200 rounded-lg shadow-lg p-1">
           <Whiteboard />
         </div>
       </div>
